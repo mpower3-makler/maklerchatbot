@@ -19,10 +19,7 @@ export async function POST(request) {
       )
     }
 
-    // Trailing Slash entfernen, falls jemand ihn in Vercel ans Ende geschrieben hat
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
-
-    // Hier hängen wir die slug an -> n8n-Route: .../chat/:slug
     const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
 
     const response = await fetch(webhookUrl, {
@@ -30,7 +27,6 @@ export async function POST(request) {
       headers: {
         'Content-Type': 'application/json',
       },
-      // n8n holt slug aus der URL, daher reicht message im Body
       body: JSON.stringify({
         message,
       }),
@@ -56,8 +52,27 @@ export async function POST(request) {
       )
     }
 
+    // 👉 Hier holen wir uns die Antwort, egal ob n8n ein Objekt oder ein Array liefert
+    let answer
+
+    if (Array.isArray(data)) {
+      const first = data[0]
+      const obj = first?.json ?? first
+      answer =
+        obj?.output ||
+        obj?.response ||
+        obj?.message ||
+        obj?.text
+    } else if (data && typeof data === 'object') {
+      answer =
+        data.output ||
+        data.response ||
+        data.message ||
+        data.text
+    }
+
     return NextResponse.json({
-      response: data.response || data.message || 'Antwort empfangen',
+      response: answer || 'Antwort empfangen',
     })
   } catch (error) {
     console.error('Chat API Fehler:', error)
