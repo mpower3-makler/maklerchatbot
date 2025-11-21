@@ -1,11 +1,18 @@
+// app/api/chat/route.js
 import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
     const { message, slug } = await request.json()
 
-    const baseUrl = process.env.N8N_WEBHOOK_URL
+    if (!message || !slug) {
+      return NextResponse.json(
+        { error: 'message oder slug fehlt im Request' },
+        { status: 400 }
+      )
+    }
 
+    const baseUrl = process.env.N8N_WEBHOOK_URL
     if (!baseUrl) {
       return NextResponse.json(
         { error: 'N8N_WEBHOOK_URL ist nicht konfiguriert' },
@@ -16,7 +23,7 @@ export async function POST(request) {
     // Trailing Slash entfernen, falls vorhanden
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
 
-    // slug an die URL anhängen -> n8n bekommt slug aus dem Pfad
+    // slug an die URL anhängen -> n8n liest slug aus dem Pfad (makler-chat/:slug)
     const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
 
     const response = await fetch(webhookUrl, {
@@ -25,10 +32,7 @@ export async function POST(request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message,
-        // slug schicken wir hier optional NICHT mehr mit,
-        // weil n8n sie schon aus dem Pfad bekommt.
-        timestamp: new Date().toISOString(),
+        message, // nur die Nachricht, mehr braucht n8n nicht zwingend
       }),
     })
 
