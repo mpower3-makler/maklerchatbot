@@ -1,4 +1,3 @@
-// app/api/chat/route.js
 import { NextResponse } from 'next/server'
 
 export async function POST(request) {
@@ -20,10 +19,10 @@ export async function POST(request) {
       )
     }
 
-    // Trailing Slash entfernen, falls vorhanden
+    // Trailing Slash entfernen, falls jemand ihn in Vercel ans Ende geschrieben hat
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
 
-    // slug an die URL anhängen -> n8n liest slug aus dem Pfad (makler-chat/:slug)
+    // Hier hängen wir die slug an -> n8n-Route: .../chat/:slug
     const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
 
     const response = await fetch(webhookUrl, {
@@ -31,8 +30,9 @@ export async function POST(request) {
       headers: {
         'Content-Type': 'application/json',
       },
+      // n8n holt slug aus der URL, daher reicht message im Body
       body: JSON.stringify({
-        message, // nur die Nachricht, mehr braucht n8n nicht zwingend
+        message,
       }),
     })
 
