@@ -161,7 +161,7 @@ export default function ChatInterface({ slug }) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Stelle hier deine Frage zum Objekt"
+            placeholder="Frage eingeben..."
             className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             disabled={isLoading}
           />
