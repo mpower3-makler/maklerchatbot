@@ -174,14 +174,14 @@ export default function ChatInterface({ slug }) {
         {/* Input-Bereich bleibt unten sichtbar */}
         <div className="pt-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/80">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Stelle hier deine Frage zum Objekt:
+            💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
           </p>
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder=" 💬 Stellen Sie hier Ihre Frage zum Objekt:"
+              placeholder="Frage eingeben..."
               className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               disabled={isLoading}
             />
