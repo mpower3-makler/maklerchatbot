@@ -89,110 +89,126 @@ export default function ChatInterface({ slug }) {
     sendMessage(question)
   }
 
-  return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-md px-6 py-4 border-b dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-          Objekt-Chat
-        </h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Property ID: {slug}
-        </p>
-      </div>
-
-      {/* Chat Container */}
-      <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-4 md:px-6 py-4">
-        {/* Scrollbarer Bereich: Beispielfragen + Nachrichten */}
-        <div className="flex-1 overflow-y-auto space-y-4 mb-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-          {/* Example Questions */}
-          {messages.length === 0 && (
-            <div className="mb-2 space-y-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                Beispielfragen:
+   return (
+    <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6">
+      {/* Chat-Karte */}
+      <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
+        {/* Header */}
+        <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 to-slate-50 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+              OB
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-semibold text-slate-900">
+                Objekt-Chat
+              </h1>
+              <p className="text-xs text-slate-500">
+                Property ID{' '}
+                <span className="ml-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] text-slate-700 shadow-sm">
+                  {slug}
+                </span>
               </p>
-              <div className="flex flex-col gap-2">
-                {EXAMPLE_QUESTIONS.map((question, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleExampleClick(question)}
-                    className="text-left px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    {question}
-                  </button>
-                ))}
-              </div>
             </div>
-          )}
-
-          {/* Messages */}
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-br-sm'
-                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-bl-sm'
-                }`}
-              >
-                {message.content}
-              </div>
+            <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span>Online</span>
             </div>
-          ))}
-
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl rounded-bl-sm shadow-md">
-                <div className="flex space-x-2">
-                  <div
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: '300ms' }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        {/* Input-Bereich bleibt unten sichtbar */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/80">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-            💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
-          </p>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Frage eingeben..."
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              Senden
-            </button>
-          </form>
+        {/* Hauptbereich: Beispiele + Nachrichten */}
+        <div className="flex flex-1 flex-col bg-slate-50">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {/* Beispielfragen oben, solange der Chat leer ist */}
+            {messages.length === 0 && (
+              <div className="mb-1 space-y-2">
+                <p className="text-xs font-medium text-slate-600">
+                  💡 Beispiel-Fragen, die Sie dem Chat stellen können:
+                </p>
+                <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+                  {EXAMPLE_QUESTIONS.map((question, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleExampleClick(question)}
+                      className="text-left px-4 py-2.5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-200 hover:border-blue-400 text-xs text-slate-700 hover:text-blue-600"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Nachrichten */}
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                <div
+                  className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-sm'
+                      : 'bg-white text-slate-900 shadow-sm rounded-bl-sm'
+                  }`}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
+
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
+                  <div className="flex space-x-2">
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input-Bereich bleibt unten sichtbar */}
+          <div className="border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
+            <p className="mb-1 text-xs text-slate-500">
+              💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
+            </p>
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ihre Frage eingeben …"
+                className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-5 py-3 rounded-2xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+              >
+                Senden
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
