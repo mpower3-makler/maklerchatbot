@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
-    const { message, slug } = await request.json()
+    const { message, slug, sessionId } = await request.json()
 
     if (!message || !slug) {
       return NextResponse.json(
@@ -22,15 +22,19 @@ export async function POST(request) {
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
     const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
 
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message,
-      }),
-    })
+const response = await fetch(webhookUrl, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message,
+    sessionId, // 👉 Session-ID mit an n8n schicken
+    // optional auch slug, falls Sie es im Body brauchen:
+    slug,
+  }),
+})
+
 
     const text = await response.text()
 
