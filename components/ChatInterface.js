@@ -42,15 +42,17 @@ export default function ChatInterface({ slug }) {
 
     try {
       const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          slug, // wichtig, damit die API die URL bauen kann
-        }),
-      })
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: text,
+    slug,       // welcher Chat
+    sessionId,  // NEU: welche Session
+  }),
+})
+
 
       const data = await response.json()
 
