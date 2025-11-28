@@ -177,3 +177,44 @@ export default function ChatInterface({ slug }) {
                         className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
                         style={{ animationDelay: '150ms' }}
                       />
+                      <div
+                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input-Bereich bleibt unten sichtbar */}
+          <div className="border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
+            <p className="mb-1 text-xs text-slate-500">
+              💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
+            </p>
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ihre Frage eingeben …"
+                className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-5 py-3 rounded-2xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+              >
+                Senden
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
