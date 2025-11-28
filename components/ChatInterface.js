@@ -42,17 +42,16 @@ export default function ChatInterface({ slug }) {
 
     try {
       const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    message: text,
-    slug,       // welcher Chat
-    sessionId,  // NEU: welche Session
-  }),
-})
-
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          slug, // welcher Chat
+          sessionId, // welche Session
+        }),
+      })
 
       const data = await response.json()
 
@@ -89,7 +88,7 @@ export default function ChatInterface({ slug }) {
     sendMessage(question)
   }
 
-   return (
+  return (
     <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6">
       {/* Chat-Karte */}
       <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
@@ -161,56 +160,20 @@ export default function ChatInterface({ slug }) {
               </div>
             ))}
 
-            {/* Loading indicator */}
+            {/* Loading indicator mit Text & Animation */}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
-                  <div className="flex space-x-2">
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '0ms' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '150ms' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '300ms' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input-Bereich bleibt unten sichtbar */}
-          <div className="border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
-            <p className="mb-1 text-xs text-slate-500">
-              💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
-            </p>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ihre Frage eingeben …"
-                className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="px-5 py-3 rounded-2xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
-              >
-                Senden
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xs text-slate-600 animate-pulse">
+                      Einen Moment, ich prüfe die Unterlagen für Sie …
+                    </span>
+                    <div className="flex space-x-1">
+                      <div
+                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
