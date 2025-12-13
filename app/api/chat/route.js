@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server'
 
-function normalizeBaseUrl(url) {
-  return String(url || '').replace(/\/$/, '')
-}
-
 function slugFromPath(path) {
   if (!path) return null
   const clean = String(path).split('?')[0]
@@ -22,6 +18,21 @@ function slugFromReferer(request) {
   }
 }
 
+function buildWebhookUrl(templateUrl, slug) {
+  const t = String(templateUrl || '').trim()
+  const s = encodeURIComponent(String(slug || '').trim())
+
+  if (!t) return null
+
+  // Wenn ENV eine Template-URL ist: .../chat/:slug
+  if (t.includes(':slug')) {
+    return t.replace(':slug', s)
+  }
+
+  // Fallback: falls du doch eine Base ohne :slug setzt
+  return t.replace(/\/$/, '') + '/' + s
+}
+
 export async function POST(request) {
   try {
     const body = await request.json()
@@ -34,15 +45,11 @@ export async function POST(request) {
       slugFromReferer(request)
 
     if (!message) {
-      return NextResponse.json(
-        { error: 'message fehlt im Request' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'message fehlt im Request' }, { status: 400 })
     }
-
     if (!slug) {
       return NextResponse.json(
-        { error: 'slug fehlt im Request (body.slug/body.path/referer)' },
+        { error: 'slug fehlt (body.slug/body.path/referer)' },
         { status: 400 }
       )
     }
@@ -50,27 +57,22 @@ export async function POST(request) {
     const slugNorm = String(slug).trim().toLowerCase()
     const isStw = slugNorm.startsWith('stw')
 
-    const baseUrl = isStw
+    const templateUrl = isStw
       ? process.env.N8N_WEBHOOK_URL_STW
-      : (process.env.N8N_WEBHOOK_URL_DEFAULT ?? process.env.N8N_WEBHOOK_URL)
+      : process.env.N8N_WEBHOOK_URL_DEFAULT
 
-    if (!baseUrl) {
+    if (!templateUrl) {
       return NextResponse.json(
-        { error: 'Webhook ENV fehlt: N8N_WEBHOOK_URL_STW und/oder N8N_WEBHOOK_URL_DEFAULT' },
+        { error: 'Webhook ENV fehlt: N8N_WEBHOOK_URL_STW oder N8N_WEBHOOK_URL_DEFAULT' },
         { status: 500 }
       )
     }
 
-    const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
+    const webhookUrl = buildWebhookUrl(templateUrl, slug)
+    if (!webhookUrl) {
+      return NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
+    }
 
-    // WICHTIG:
-    // - STW: feste Webhook-URL (kein /slug)
-    // - Default: wie bisher /<slug>
-    const webhookUrl = isStw
-      ? normalizedBaseUrl
-      : `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
-
-    // Debug (Vercel Logs): zeigt dir, wohin geroutet wird
     console.log('[chat-router]', { slug, isStw, webhookUrl })
 
     const response = await fetch(webhookUrl, {
@@ -104,13 +106,13 @@ export async function POST(request) {
     try {
       data = JSON.parse(text)
     } catch {
-      // Wenn n8n z.B. HTML zurückgibt, siehst du es hier
       return NextResponse.json(
         { error: 'n8n Antwort war kein gültiges JSON', raw: text, webhookUrl },
         { status: 500 }
       )
     }
 
+    // deine bestehende Antwort-Extraktion beibehalten
     let answer
     if (Array.isArray(data)) {
       const first = data[0]
