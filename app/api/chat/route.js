@@ -1,44 +1,77 @@
 import { NextResponse } from 'next/server'
 
 function normalizeBaseUrl(url) {
-  return url.replace(/\/$/, '')
+  return String(url || '').replace(/\/$/, '')
 }
 
-function pickBaseUrl(slugRaw) {
-  const slug = String(slugRaw || '').trim().toLowerCase()
+function slugFromPath(path) {
+  if (!path) return null
+  const clean = String(path).split('?')[0]
+  const seg = clean.split('/').filter(Boolean)[0]
+  return seg || null
+}
 
-  // Wenn slug mit "stw" startet -> Webhook 1
-  if (slug.startsWith('stw')) {
-    return process.env.N8N_WEBHOOK_URL_STW
+function slugFromReferer(request) {
+  const ref = request.headers.get('referer')
+  if (!ref) return null
+  try {
+    const u = new URL(ref)
+    return slugFromPath(u.pathname)
+  } catch {
+    return null
   }
-
-  // Sonst -> Webhook 2 (Default)
-  return process.env.N8N_WEBHOOK_URL_DEFAULT ?? process.env.N8N_WEBHOOK_URL
 }
 
 export async function POST(request) {
   try {
-    const { message, slug, sessionId } = await request.json()
+    const body = await request.json()
 
-    if (!message || !slug) {
+    const message = body.message || body.input || body.text
+    let slug =
+      body.slug ||
+      body?.metadata?.slug ||
+      slugFromPath(body.path) ||
+      slugFromReferer(request)
+
+    if (!message) {
       return NextResponse.json(
-        { error: 'message oder slug fehlt im Request' },
+        { error: 'message fehlt im Request' },
         { status: 400 }
       )
     }
 
-    const baseUrl = pickBaseUrl(slug)
+    if (!slug) {
+      return NextResponse.json(
+        { error: 'slug fehlt im Request (body.slug/body.path/referer)' },
+        { status: 400 }
+      )
+    }
+
+    const slugNorm = String(slug).trim().toLowerCase()
+    const isStw = slugNorm.startsWith('stw')
+
+    const baseUrl = isStw
+      ? process.env.N8N_WEBHOOK_URL_STW
+      : (process.env.N8N_WEBHOOK_URL_DEFAULT ?? process.env.N8N_WEBHOOK_URL)
+
     if (!baseUrl) {
       return NextResponse.json(
-        { error: 'N8N_WEBHOOK_URL_DEFAULT (oder N8N_WEBHOOK_URL) / N8N_WEBHOOK_URL_STW ist nicht konfiguriert' },
+        { error: 'Webhook ENV fehlt: N8N_WEBHOOK_URL_STW und/oder N8N_WEBHOOK_URL_DEFAULT' },
         { status: 500 }
       )
     }
 
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
 
-    // Beibehaltener Mechanismus: slug als Pfad-Segment anhängen
-    const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
+    // WICHTIG:
+    // - STW: feste Webhook-URL (kein /slug)
+    // - Default: wie bisher /<slug>
+    const webhookUrl = isStw
+      ? normalizedBaseUrl
+      : `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
+
+    // Debug (Vercel Logs): zeigt dir, wohin geroutet wird
+    console.log('[chat-router]', { slug, isStw, webhookUrl })
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -50,8 +83,10 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         message,
-        sessionId,
         slug,
+        sessionId: body.sessionId,
+        path: body.path,
+        metadata: body.metadata,
       }),
     })
 
@@ -60,7 +95,7 @@ export async function POST(request) {
     if (!response.ok) {
       console.error('n8n HTTP Fehler:', response.status, text)
       return NextResponse.json(
-        { error: `n8n HTTP-Fehler ${response.status}`, details: text },
+        { error: `n8n HTTP-Fehler ${response.status}`, details: text, webhookUrl },
         { status: 500 }
       )
     }
@@ -69,8 +104,9 @@ export async function POST(request) {
     try {
       data = JSON.parse(text)
     } catch {
+      // Wenn n8n z.B. HTML zurückgibt, siehst du es hier
       return NextResponse.json(
-        { error: 'n8n Antwort war kein gültiges JSON', raw: text },
+        { error: 'n8n Antwort war kein gültiges JSON', raw: text, webhookUrl },
         { status: 500 }
       )
     }
@@ -78,7 +114,7 @@ export async function POST(request) {
     let answer
     if (Array.isArray(data)) {
       const first = data[0]
-      const obj = (first && first.json) ? first.json : first
+      const obj = first?.json ?? first
       answer = obj?.output || obj?.response || obj?.message || obj?.text
     } else if (data && typeof data === 'object') {
       answer = data.output || data.response || data.message || data.text
