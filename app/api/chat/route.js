@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+const SESSION_COOKIE_NAME = 'chat_session_id'
+
 function buildWebhookUrl(templateUrl, slug) {
   const t = String(templateUrl || '').trim()
   const s = encodeURIComponent(String(slug || '').trim())
@@ -24,6 +26,21 @@ function slugFromReferer(request) {
   } catch {
     return null
   }
+}
+
+function getCookieValue(cookieHeader, name) {
+  if (!cookieHeader) return null
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function generateSessionId() {
+  // crypto.randomUUID ist in modernen Runtimes verfügbar
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  // Fallback (sollte selten nötig sein)
+  return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`
 }
 
 function pickAnswer(obj) {
@@ -51,101 +68,4 @@ function pickAnswer(obj) {
     obj.json && obj.json.reply,
   ].filter((v) => typeof v === 'string' && v.trim())
 
-  return candidates[0] || null
-}
-
-export async function POST(request) {
-  try {
-    const body = await request.json()
-
-    const message = body.message || body.input || body.text
-
-    const slug =
-      body.slug ||
-      (body.metadata && body.metadata.slug) ||
-      body.propertyId ||
-      body.property_id ||
-      slugFromPath(body.path) ||
-      slugFromReferer(request)
-
-    const sessionId = body.sessionId
-    const path = body.path
-    const metadata = body.metadata
-
-    if (!message || !slug) {
-      return NextResponse.json(
-        { error: 'message oder slug fehlt im Request', got: { message: !!message, slug } },
-        { status: 400 }
-      )
-    }
-
-    const slugNorm = String(slug).trim().toLowerCase()
-    const isStw = slugNorm.startsWith('stw')
-
-    const templateUrl = isStw
-      ? process.env.N8N_WEBHOOK_URL_STW
-      : process.env.N8N_WEBHOOK_URL_DEFAULT
-
-    if (!templateUrl) {
-      return NextResponse.json(
-        {
-          error: 'N8N_WEBHOOK_URL_DEFAULT / N8N_WEBHOOK_URL_STW ist nicht konfiguriert',
-          env: {
-            hasDEFAULT: !!process.env.N8N_WEBHOOK_URL_DEFAULT,
-            hasSTW: !!process.env.N8N_WEBHOOK_URL_STW,
-          },
-        },
-        { status: 500 }
-      )
-    }
-
-    const webhookUrl = buildWebhookUrl(templateUrl, slug)
-    if (!webhookUrl) {
-      return NextResponse.json(
-        { error: 'Webhook URL konnte nicht gebaut werden' },
-        { status: 500 }
-      )
-    }
-
-    console.log('[chat-router]', { slug, isStw, webhookUrl })
-
-    const resp = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, slug, sessionId, path, metadata }),
-    })
-
-    const raw = await resp.text()
-
-    if (!resp.ok) {
-      console.error('n8n HTTP Fehler:', resp.status, raw)
-      return NextResponse.json(
-        { error: `n8n HTTP-Fehler ${resp.status}`, details: raw },
-        { status: 500 }
-      )
-    }
-
-    let data
-    try {
-      data = JSON.parse(raw)
-    } catch {
-      return NextResponse.json({ response: raw })
-    }
-
-    let answer = null
-    if (Array.isArray(data)) {
-      const first = data[0]
-      answer = pickAnswer(first) || pickAnswer(first && first.json)
-    } else {
-      answer = pickAnswer(data) || pickAnswer(data && data.json)
-    }
-
-    return NextResponse.json({ response: answer || raw })
-  } catch (error) {
-    console.error('Chat API Fehler:', error)
-    return NextResponse.json(
-      { error: `Fehler beim Senden der Nachricht: ${error && error.message ? error.message : String(error)}` },
-      { status: 500 }
-    )
-  }
-}
+  return candidates[0]
