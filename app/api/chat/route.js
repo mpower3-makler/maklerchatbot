@@ -21,15 +21,8 @@ function slugFromReferer(request) {
 function buildWebhookUrl(templateUrl, slug) {
   const t = String(templateUrl || '').trim()
   const s = encodeURIComponent(String(slug || '').trim())
-
   if (!t) return null
-
-  // Wenn ENV eine Template-URL ist: .../chat/:slug
-  if (t.includes(':slug')) {
-    return t.replace(':slug', s)
-  }
-
-  // Fallback: falls du doch eine Base ohne :slug setzt
+  if (t.includes(':slug')) return t.replace(':slug', s)
   return t.replace(/\/$/, '') + '/' + s
 }
 
@@ -48,10 +41,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'message fehlt im Request' }, { status: 400 })
     }
     if (!slug) {
-      return NextResponse.json(
-        { error: 'slug fehlt (body.slug/body.path/referer)' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'slug fehlt (body.slug/body.path/referer)' }, { status: 400 })
     }
 
     const slugNorm = String(slug).trim().toLowerCase()
@@ -69,20 +59,11 @@ export async function POST(request) {
     }
 
     const webhookUrl = buildWebhookUrl(templateUrl, slug)
-    if (!webhookUrl) {
-      return NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
-    }
-
     console.log('[chat-router]', { slug, isStw, webhookUrl })
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.N8N_WEBHOOK_TOKEN
-          ? { Authorization: `Bearer ${process.env.N8N_WEBHOOK_TOKEN}` }
-          : {}),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
         slug,
@@ -112,7 +93,6 @@ export async function POST(request) {
       )
     }
 
-    // deine bestehende Antwort-Extraktion beibehalten
     let answer
     if (Array.isArray(data)) {
       const first = data[0]
