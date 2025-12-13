@@ -8,6 +8,24 @@ function buildWebhookUrl(templateUrl, slug) {
   return t.replace(/\/$/, '') + '/' + s
 }
 
+function slugFromPath(path) {
+  if (!path) return null
+  const clean = String(path).split('?')[0]
+  const seg = clean.split('/').filter(Boolean)[0]
+  return seg || null
+}
+
+function slugFromReferer(request) {
+  const ref = request.headers.get('referer')
+  if (!ref) return null
+  try {
+    const u = new URL(ref)
+    return slugFromPath(u.pathname)
+  } catch {
+    return null
+  }
+}
+
 function pickAnswer(obj) {
   if (!obj || typeof obj !== 'object') return null
 
@@ -41,14 +59,22 @@ export async function POST(request) {
     const body = await request.json()
 
     const message = body.message || body.input || body.text
-    const slug = body.slug || (body.metadata && body.metadata.slug)
+
+    const slug =
+      body.slug ||
+      (body.metadata && body.metadata.slug) ||
+      body.propertyId ||
+      body.property_id ||
+      slugFromPath(body.path) ||
+      slugFromReferer(request)
+
     const sessionId = body.sessionId
     const path = body.path
     const metadata = body.metadata
 
     if (!message || !slug) {
       return NextResponse.json(
-        { error: 'message oder slug fehlt im Request' },
+        { error: 'message oder slug fehlt im Request', got: { message: !!message, slug } },
         { status: 400 }
       )
     }
@@ -58,13 +84,16 @@ export async function POST(request) {
 
     const templateUrl = isStw
       ? process.env.N8N_WEBHOOK_URL_STW
-      : (process.env.N8N_WEBHOOK_URL_DEFAULT ?? process.env.N8N_WEBHOOK_URL)
+      : process.env.N8N_WEBHOOK_URL_DEFAULT
 
     if (!templateUrl) {
       return NextResponse.json(
         {
-          error:
-            'N8N_WEBHOOK_URL_DEFAULT (oder N8N_WEBHOOK_URL) / N8N_WEBHOOK_URL_STW ist nicht konfiguriert',
+          error: 'N8N_WEBHOOK_URL_DEFAULT / N8N_WEBHOOK_URL_STW ist nicht konfiguriert',
+          env: {
+            hasDEFAULT: !!process.env.N8N_WEBHOOK_URL_DEFAULT,
+            hasSTW: !!process.env.N8N_WEBHOOK_URL_STW,
+          },
         },
         { status: 500 }
       )
@@ -78,16 +107,12 @@ export async function POST(request) {
       )
     }
 
+    console.log('[chat-router]', { slug, isStw, webhookUrl })
+
     const resp = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        slug,
-        sessionId,
-        path,
-        metadata,
-      }),
+      body: JSON.stringify({ message, slug, sessionId, path, metadata }),
     })
 
     const raw = await resp.text()
@@ -104,7 +129,6 @@ export async function POST(request) {
     try {
       data = JSON.parse(raw)
     } catch {
-      // Falls n8n plain text zurückgibt
       return NextResponse.json({ response: raw })
     }
 
@@ -116,9 +140,7 @@ export async function POST(request) {
       answer = pickAnswer(data) || pickAnswer(data && data.json)
     }
 
-    return NextResponse.json({
-      response: answer || raw,
-    })
+    return NextResponse.json({ response: answer || raw })
   } catch (error) {
     console.error('Chat API Fehler:', error)
     return NextResponse.json(
