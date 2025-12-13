@@ -28,6 +28,12 @@ function slugFromReferer(request) {
   }
 }
 
+function getCookieValue(cookieHeader, name) {
+  if (!cookieHeader) return null
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 function generateSessionId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
@@ -84,13 +90,11 @@ export async function POST(request) {
     }
 
     // SessionId: Body > Cookie > neu
-    const cookieSessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value || null
+    const cookieHeader = request.headers.get('cookie') || ''
+    const cookieSessionId = getCookieValue(cookieHeader, SESSION_COOKIE_NAME)
     const sessionId = body.sessionId || cookieSessionId || generateSessionId()
 
-    const path = body.path
-    const metadata = body.metadata
-
-    // Routing
+    // Routing: stw* => STW, sonst DEFAULT
     const slugNorm = String(slug).trim().toLowerCase()
     const isStw = slugNorm.startsWith('stw')
 
@@ -121,7 +125,13 @@ export async function POST(request) {
     const resp = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, slug, sessionId, path, metadata }),
+      body: JSON.stringify({
+        message,
+        slug,
+        sessionId,
+        path: body.path,
+        metadata: body.metadata,
+      }),
     })
 
     const raw = await resp.text()
