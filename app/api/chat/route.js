@@ -7,19 +7,43 @@ function buildWebhookUrl(templateUrl, slug) {
   return t.includes(':slug') ? t.replace(':slug', s) : t.replace(/\/$/, '') + '/' + s
 }
 
+function pickAnswer(obj) {
+  if (!obj || typeof obj !== 'object') return null
+
+  const candidates = [
+    obj.text,
+    obj.output,
+    obj.response,
+    obj.message,
+    obj.answer,
+    obj.reply,
+    obj.result,
+
+    // häufige verschachtelte Varianten:
+    obj.data?.text,
+    obj.data?.output,
+    obj.data?.response,
+    obj.data?.message,
+
+    // n8n item format:
+    obj.json?.text,
+    obj.json?.output,
+    obj.json?.response,
+    obj.json?.message,
+    obj.json?.answer,
+    obj.json?.reply,
+  ].filter(v => typeof v === 'string' && v.trim())
+
+  return candidates[0] || null
+}
+
 export async function POST(request) {
   try {
-    const body = await request.json()
+    const { message, slug, sessionId, path, metadata } = await request.json()
 
-    const message = body.message || body.input || body.text
-    const slug = body.slug || body?.metadata?.slug
-
-    if (!message) {
-      return NextResponse.json({ error: 'message fehlt im Request', body }, { status: 400 })
-    }
-    if (!slug) {
+    if (!message || !slug) {
       return NextResponse.json(
-        { error: 'slug fehlt im Request (wird nicht vom Frontend gesendet)', body },
+        { error: 'message oder slug fehlt im Request' },
         { status: 400 }
       )
     }
@@ -33,40 +57,17 @@ export async function POST(request) {
 
     if (!templateUrl) {
       return NextResponse.json(
-        { error: 'Webhook ENV fehlt', isStw, slug, env: { hasSTW: !!process.env.N8N_WEBHOOK_URL_STW, hasDEFAULT: !!process.env.N8N_WEBHOOK_URL_DEFAULT, hasOLD: !!process.env.N8N_WEBHOOK_URL } },
+        { error: 'N8N_WEBHOOK_URL_DEFAULT (oder N8N_WEBHOOK_URL) / N8N_WEBHOOK_URL_STW ist nicht konfiguriert' },
         { status: 500 }
       )
     }
 
     const webhookUrl = buildWebhookUrl(templateUrl, slug)
-    console.log('[chat-router]', { slug, isStw, webhookUrl })
+    if (!webhookUrl) {
+      return NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
+    }
 
-    const response = await fetch(webhookUrl, {
+    const resp = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, slug, sessionId: body.sessionId }),
-    })
-
-    const text = await response.text()
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `n8n HTTP-Fehler ${response.status}`, details: text, slug, isStw, webhookUrl },
-        { status: 500 }
-      )
-    }
-
-    // n8n muss JSON liefern
-    let data
-    try { data = JSON.parse(text) } catch {
-      return NextResponse.json(
-        { error: 'n8n Antwort war kein gültiges JSON', raw: text, slug, isStw, webhookUrl },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(data)
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
-  }
-}
+      body: JSON.stringify({ message,
