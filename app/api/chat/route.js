@@ -2,12 +2,24 @@ import { NextResponse } from 'next/server'
 
 const SESSION_COOKIE_NAME = 'chat_session_id'
 
+function getCookieValue(cookieHeader, name) {
+  if (!cookieHeader) return null
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function generateSessionId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`
+}
+
 function buildWebhookUrl(templateUrl, slug) {
   const t = String(templateUrl || '').trim()
   const s = encodeURIComponent(String(slug || '').trim())
   if (!t) return null
-  if (t.includes(':slug')) return t.replace(':slug', s)
-  return t.replace(/\/$/, '') + '/' + s
+  return t.includes(':slug') ? t.replace(':slug', s) : t.replace(/\/$/, '') + '/' + s
 }
 
 function slugFromPath(path) {
@@ -28,22 +40,8 @@ function slugFromReferer(request) {
   }
 }
 
-function getCookieValue(cookieHeader, name) {
-  if (!cookieHeader) return null
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-function generateSessionId() {
-  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID()
-  }
-  return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`
-}
-
 function pickAnswer(obj) {
   if (!obj || typeof obj !== 'object') return null
-
   const candidates = [
     obj.text,
     obj.output,
@@ -52,20 +50,12 @@ function pickAnswer(obj) {
     obj.answer,
     obj.reply,
     obj.result,
-
-    obj.data && obj.data.text,
-    obj.data && obj.data.output,
-    obj.data && obj.data.response,
-    obj.data && obj.data.message,
-
-    obj.json && obj.json.text,
-    obj.json && obj.json.output,
-    obj.json && obj.json.response,
-    obj.json && obj.json.message,
-    obj.json && obj.json.answer,
-    obj.json && obj.json.reply,
+    obj?.json?.text,
+    obj?.json?.output,
+    obj?.json?.response,
+    obj?.json?.message,
+    obj?.json?.answer,
   ].filter((v) => typeof v === 'string' && v.trim())
-
   return candidates[0] || null
 }
 
@@ -76,7 +66,7 @@ export async function POST(request) {
     const message = body.message || body.input || body.text
     const slug =
       body.slug ||
-      (body.metadata && body.metadata.slug) ||
+      body?.metadata?.slug ||
       body.propertyId ||
       body.property_id ||
       slugFromPath(body.path) ||
@@ -89,12 +79,11 @@ export async function POST(request) {
       )
     }
 
-    // SessionId: Body > Cookie > neu
+    // Session: Body > Cookie > neu
     const cookieHeader = request.headers.get('cookie') || ''
     const cookieSessionId = getCookieValue(cookieHeader, SESSION_COOKIE_NAME)
     const sessionId = body.sessionId || cookieSessionId || generateSessionId()
 
-    // Routing: stw* => STW, sonst DEFAULT
     const slugNorm = String(slug).trim().toLowerCase()
     const isStw = slugNorm.startsWith('stw')
 
@@ -120,15 +109,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
     }
 
-    console.log('[chat-router]', { slug, isStw, webhookUrl, sessionId })
-
     const resp = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
         slug,
-        sessionId,
+        sessionId, // <- immer mitgeben
         path: body.path,
         metadata: body.metadata,
       }),
@@ -136,16 +123,37 @@ export async function POST(request) {
 
     const raw = await resp.text()
 
+    // Wenn n8n 200 aber leer zurückgibt -> deutlich machen
+    if (resp.ok && (!raw || !raw.trim())) {
+      const resEmpty = NextResponse.json(
+        {
+          error: 'n8n hat mit 200 geantwortet, aber ohne Body (content-length: 0). DEFAULT-Workflow muss eine Response zurückgeben.',
+          sessionId,
+        },
+        { status: 502 }
+      )
+      const proto = request.headers.get('x-forwarded-proto') || ''
+      const secure = proto === 'https' || request.url.startsWith('https://')
+      resEmpty.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure,
+        path: '/',
+      })
+      return resEmpty
+    }
+
     if (!resp.ok) {
-      console.error('n8n HTTP Fehler:', resp.status, raw)
       const resErr = NextResponse.json(
         { error: `n8n HTTP-Fehler ${resp.status}`, details: raw, sessionId },
         { status: 500 }
       )
+      const proto = request.headers.get('x-forwarded-proto') || ''
+      const secure = proto === 'https' || request.url.startsWith('https://')
       resErr.cookies.set(SESSION_COOKIE_NAME, sessionId, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true,
+        secure,
         path: '/',
       })
       return resErr
@@ -156,35 +164,34 @@ export async function POST(request) {
       data = JSON.parse(raw)
     } catch {
       const resText = NextResponse.json({ response: raw, sessionId })
+      const proto = request.headers.get('x-forwarded-proto') || ''
+      const secure = proto === 'https' || request.url.startsWith('https://')
       resText.cookies.set(SESSION_COOKIE_NAME, sessionId, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true,
+        secure,
         path: '/',
       })
       return resText
     }
 
-    let answer = null
-    if (Array.isArray(data)) {
-      const first = data[0]
-      answer = pickAnswer(first) || pickAnswer(first && first.json)
-    } else {
-      answer = pickAnswer(data) || pickAnswer(data && data.json)
-    }
+    const answer = Array.isArray(data)
+      ? pickAnswer(data[0]) || pickAnswer(data[0]?.json)
+      : pickAnswer(data) || pickAnswer(data?.json)
 
     const res = NextResponse.json({ response: answer || raw, sessionId })
+    const proto = request.headers.get('x-forwarded-proto') || ''
+    const secure = proto === 'https' || request.url.startsWith('https://')
     res.cookies.set(SESSION_COOKIE_NAME, sessionId, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: true,
+      secure,
       path: '/',
     })
     return res
   } catch (error) {
-    console.error('Chat API Fehler:', error)
     return NextResponse.json(
-      { error: `Fehler beim Senden der Nachricht: ${error && error.message ? error.message : String(error)}` },
+      { error: `Fehler beim Senden der Nachricht: ${error?.message ?? String(error)}` },
       { status: 500 }
     )
   }
