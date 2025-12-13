@@ -28,12 +28,6 @@ function slugFromReferer(request) {
   }
 }
 
-function getCookieValue(cookieHeader, name) {
-  if (!cookieHeader) return null
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
-  return match ? decodeURIComponent(match[1]) : null
-}
-
 function generateSessionId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
@@ -89,15 +83,14 @@ export async function POST(request) {
       )
     }
 
-    // SessionId: Body > Cookie > neu generieren
-    const cookieHeader = request.headers.get('cookie') || ''
-    const cookieSessionId = getCookieValue(cookieHeader, SESSION_COOKIE_NAME)
+    // SessionId: Body > Cookie > neu
+    const cookieSessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value || null
     const sessionId = body.sessionId || cookieSessionId || generateSessionId()
 
     const path = body.path
     const metadata = body.metadata
 
-    // Routing: stw* => STW, sonst DEFAULT (ursprünglicher)
+    // Routing
     const slugNorm = String(slug).trim().toLowerCase()
     const isStw = slugNorm.startsWith('stw')
 
@@ -106,7 +99,7 @@ export async function POST(request) {
       : process.env.N8N_WEBHOOK_URL_DEFAULT
 
     if (!templateUrl) {
-      const res = NextResponse.json(
+      return NextResponse.json(
         {
           error: 'N8N_WEBHOOK_URL_DEFAULT / N8N_WEBHOOK_URL_STW ist nicht konfiguriert',
           env: {
@@ -116,21 +109,11 @@ export async function POST(request) {
         },
         { status: 500 }
       )
-      res.headers.append(
-        'Set-Cookie',
-        `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Secure`
-      )
-      return res
     }
 
     const webhookUrl = buildWebhookUrl(templateUrl, slug)
     if (!webhookUrl) {
-      const res = NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
-      res.headers.append(
-        'Set-Cookie',
-        `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Secure`
-      )
-      return res
+      return NextResponse.json({ error: 'Webhook URL konnte nicht gebaut werden' }, { status: 500 })
     }
 
     console.log('[chat-router]', { slug, isStw, webhookUrl, sessionId })
@@ -145,27 +128,31 @@ export async function POST(request) {
 
     if (!resp.ok) {
       console.error('n8n HTTP Fehler:', resp.status, raw)
-      const res = NextResponse.json(
-        { error: `n8n HTTP-Fehler ${resp.status}`, details: raw },
+      const resErr = NextResponse.json(
+        { error: `n8n HTTP-Fehler ${resp.status}`, details: raw, sessionId },
         { status: 500 }
       )
-      res.headers.append(
-        'Set-Cookie',
-        `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Secure`
-      )
-      return res
+      resErr.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+      })
+      return resErr
     }
 
     let data
     try {
       data = JSON.parse(raw)
     } catch {
-      const res = NextResponse.json({ response: raw, sessionId })
-      res.headers.append(
-        'Set-Cookie',
-        `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Secure`
-      )
-      return res
+      const resText = NextResponse.json({ response: raw, sessionId })
+      resText.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+      })
+      return resText
     }
 
     let answer = null
@@ -177,10 +164,12 @@ export async function POST(request) {
     }
 
     const res = NextResponse.json({ response: answer || raw, sessionId })
-    res.headers.append(
-      'Set-Cookie',
-      `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Secure`
-    )
+    res.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: true,
+      path: '/',
+    })
     return res
   } catch (error) {
     console.error('Chat API Fehler:', error)
