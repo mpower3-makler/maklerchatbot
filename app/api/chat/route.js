@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 
-function normalizeBaseUrl(url: string) {
+function normalizeBaseUrl(url) {
   return url.replace(/\/$/, '')
 }
 
-function pickBaseUrl(slugRaw: string) {
-  const slug = slugRaw.trim().toLowerCase()
+function pickBaseUrl(slugRaw) {
+  const slug = String(slugRaw || '').trim().toLowerCase()
 
   // Wenn slug mit "stw" startet -> Webhook 1
   if (slug.startsWith('stw')) {
@@ -16,7 +16,7 @@ function pickBaseUrl(slugRaw: string) {
   return process.env.N8N_WEBHOOK_URL_DEFAULT ?? process.env.N8N_WEBHOOK_URL
 }
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const { message, slug, sessionId } = await request.json()
 
@@ -37,15 +37,13 @@ export async function POST(request: Request) {
 
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
 
-    // Beibehaltener Mechanismus: du hängst den slug als Pfad-Segment an
-    // (Falls dein neuer STW-Workflow KEIN slug-Suffix braucht, sag Bescheid – dann schalten wir das je nach Workflow um.)
+    // Beibehaltener Mechanismus: slug als Pfad-Segment anhängen
     const webhookUrl = `${normalizedBaseUrl}/${encodeURIComponent(slug)}`
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Optional: Shared Secret für n8n Webhooks
         ...(process.env.N8N_WEBHOOK_TOKEN
           ? { Authorization: `Bearer ${process.env.N8N_WEBHOOK_TOKEN}` }
           : {}),
@@ -67,7 +65,7 @@ export async function POST(request: Request) {
       )
     }
 
-    let data: any
+    let data
     try {
       data = JSON.parse(text)
     } catch {
@@ -77,21 +75,17 @@ export async function POST(request: Request) {
       )
     }
 
-    // Antwort normalisieren (dein bisheriges Verhalten)
-    let answer: string | undefined
-
+    let answer
     if (Array.isArray(data)) {
       const first = data[0]
-      const obj = first?.json ?? first
+      const obj = (first && first.json) ? first.json : first
       answer = obj?.output || obj?.response || obj?.message || obj?.text
     } else if (data && typeof data === 'object') {
       answer = data.output || data.response || data.message || data.text
     }
 
-    return NextResponse.json({
-      response: answer || 'Antwort empfangen',
-    })
-  } catch (error: any) {
+    return NextResponse.json({ response: answer || 'Antwort empfangen' })
+  } catch (error) {
     console.error('Chat API Fehler:', error)
     return NextResponse.json(
       { error: `Fehler beim Senden der Nachricht: ${error?.message ?? String(error)}` },
