@@ -2,10 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react'
 
-const EXAMPLE_QUESTIONS = [
+const DEFAULT_EXAMPLE_QUESTIONS = [
   'Welche Modernisierungsmaßnahmen werden im Energieausweis empfohlen?',
   'Gab es in den letzten Jahren energetische Sanierungen (z.B. Fenster, Dämmung, Heizung)?',
   'Wie hoch sind die monatlichen Nebenkosten?',
+]
+
+const STW_EXAMPLE_QUESTIONS = [
+  'Wer kann sich bewerben?',
+  'Kann ich auch zu einem späteren Zeitpunkt einziehen?',
+  'Welche Fristen muss ich bei einer Kündigung beachten?',
+  'Who is eligible to apply?',
+  'Quelles sont les conditions pour résilier le contrat ?',
 ]
 
 export default function ChatInterface({ slug }) {
@@ -13,12 +21,12 @@ export default function ChatInterface({ slug }) {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId] = useState(() => {
-    return (
-      'sess_' +
-      Math.random().toString(36).slice(2) +
-      Date.now().toString(36)
-    )
+    return 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36)
   })
+
+  const slugNorm = String(slug || '').trim().toLowerCase()
+  const isStw = slugNorm.startsWith('stw')
+  const exampleQuestions = isStw ? STW_EXAMPLE_QUESTIONS : DEFAULT_EXAMPLE_QUESTIONS
 
   const messagesEndRef = useRef(null)
 
@@ -70,8 +78,7 @@ export default function ChatInterface({ slug }) {
         ...prev,
         {
           role: 'assistant',
-          content:
-            'Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.',
+          content: 'Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.',
         },
       ])
     } finally {
@@ -99,9 +106,7 @@ export default function ChatInterface({ slug }) {
               OB
             </div>
             <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-slate-900">
-                Objekt-Chat
-              </h1>
+              <h1 className="text-sm font-semibold text-slate-900">Objekt-Chat</h1>
               <p className="text-xs text-slate-500">
                 Property ID{' '}
                 <span className="ml-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] text-slate-700 shadow-sm">
@@ -126,9 +131,9 @@ export default function ChatInterface({ slug }) {
                   💡 Beispiel-Fragen, die Sie dem Chat stellen können:
                 </p>
                 <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
-                  {EXAMPLE_QUESTIONS.map((question, index) => (
+                  {exampleQuestions.map((question) => (
                     <button
-                      key={index}
+                      key={question}
                       type="button"
                       onClick={() => handleExampleClick(question)}
                       className="text-left px-4 py-2.5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-200 hover:border-blue-400 text-xs text-slate-700 hover:text-blue-600"
@@ -144,9 +149,7 @@ export default function ChatInterface({ slug }) {
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
@@ -192,9 +195,7 @@ export default function ChatInterface({ slug }) {
 
           {/* Input-Bereich bleibt unten sichtbar */}
           <div className="border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
-            <p className="mb-1 text-xs text-slate-500">
-              💬 Stellen Sie dem Chat Ihre Frage zum Objekt:
-            </p>
+            <p className="mb-1 text-xs text-slate-500">💬 Stellen Sie dem Chat Ihre Frage zum Objekt:</p>
             <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 type="text"
