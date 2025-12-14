@@ -16,6 +16,19 @@ const STW_EXAMPLE_QUESTIONS = [
   'Quelles sont les conditions pour résilier le contrat ?',
 ]
 
+// Loading-Texts rotieren in mehreren Sprachen
+const LOADING_TEXTS_SHORT = [
+  'Einen Moment, ich prüfe die Unterlagen für Sie …',
+  'One moment — I’m checking the documents for you …',
+  'Un instant — je vérifie les documents pour vous …',
+]
+
+const LOADING_TEXTS_LONG = [
+  'Das dauert etwas länger als üblich. Danke für Ihre Geduld …',
+  'This is taking a bit longer than usual. Thanks for your patience …',
+  "Cela prend un peu plus de temps que d’habitude. Merci pour votre patience …",
+]
+
 export default function ChatInterface({ slug }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -27,6 +40,34 @@ export default function ChatInterface({ slug }) {
   const slugNorm = String(slug || '').trim().toLowerCase()
   const isStw = slugNorm.startsWith('stw')
   const exampleQuestions = isStw ? STW_EXAMPLE_QUESTIONS : DEFAULT_EXAMPLE_QUESTIONS
+
+  // Loading-Text-Rotation (simple Variante: startet immer mit DE, dann EN, dann FR)
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0)
+  const [loadingPhase, setLoadingPhase] = useState('short') // 'short' | 'long'
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingMsgIndex(0)
+      setLoadingPhase('short')
+      return
+    }
+
+    setLoadingPhase('short')
+
+    const phaseTimeout = setTimeout(() => setLoadingPhase('long'), 12000)
+
+    const interval = setInterval(() => {
+      setLoadingMsgIndex((i) => i + 1)
+    }, 3500)
+
+    return () => {
+      clearTimeout(phaseTimeout)
+      clearInterval(interval)
+    }
+  }, [isLoading])
+
+  const loadingTexts = loadingPhase === 'long' ? LOADING_TEXTS_LONG : LOADING_TEXTS_SHORT
+  const loadingText = loadingTexts[loadingMsgIndex % loadingTexts.length]
 
   const messagesEndRef = useRef(null)
 
@@ -168,9 +209,7 @@ export default function ChatInterface({ slug }) {
               <div className="flex justify-start">
                 <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
                   <div className="flex items-center space-x-3">
-                    <span className="text-xs text-slate-600 animate-pulse">
-                      Einen Moment, ich prüfe die Unterlagen für Sie …
-                    </span>
+                    <span className="text-xs text-slate-600 animate-pulse">{loadingText}</span>
                     <div className="flex space-x-1">
                       <div
                         className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
