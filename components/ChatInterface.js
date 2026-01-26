@@ -5,8 +5,8 @@ import ReactMarkdown from 'react-markdown'
 
 const STW_EXAMPLE_QUESTIONS = [
   'Wie bewerbe ich mich für einen Wohnheimplatz?', 
-  'How do I apply for a room change?',             
-  'Quelles sind die Regeln für die Nachtruhe?', 
+  'Wie kann ich mein Zimmer wechseln?',             
+  'Welche Regeln gelten für die Nachtruhe?', 
   'Was muss ich beim Einzug beachten?'            
 ]
 
@@ -112,7 +112,7 @@ export default function ChatInterface({ slug }) {
               <p className="text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-[0.15em]">Häufige Themen</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-md">
                 {STW_EXAMPLE_QUESTIONS.map((q) => (
-                  <button key={q} onClick={() => sendMessage(q)} className="text-left px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 hover:border-[#003d82] hover:bg-blue-50 transition-all text-[13px] leading-tight">
+                  <button key={q} onClick={() => sendMessage(q)} className="text-left px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 hover:border-[#003d82] hover:bg-blue-50 transition-all text-[13px] leading-tight font-medium">
                     {q}
                   </button>
                 ))}
@@ -153,12 +153,12 @@ export default function ChatInterface({ slug }) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer Area with Input & Disclaimer */}
+        {/* Footer Area with Input & New Disclaimer */}
         <div className="p-4 bg-white border-t border-slate-100">
           <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="relative flex items-center max-w-3xl mx-auto group">
             <input
               type="text" value={input} onChange={(e) => setInput(e.target.value)}
-              placeholder="Nachricht senden..."
+              placeholder="Frage stellen..."
               className="w-full pl-4 pr-12 py-2.5 rounded-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003d82]/20 focus:bg-white focus:border-[#003d82] text-[14px] transition-all"
               disabled={isLoading}
             />
@@ -170,12 +170,10 @@ export default function ChatInterface({ slug }) {
             </button>
           </form>
           
-          {/* Legal Disclaimer Box */}
           <div className="mt-4 pt-3 border-t border-slate-50">
-            <p className="text-[10px] text-center text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf offiziellen Dokumenten 
-              (z. B. Mietbedingungen, Hausordnung, Brandschutz). Rechtlich bindend sind ausschließlich die unterzeichneten Verträge.
-            </p>
+            <p className="text-[10px] text-center text-slate-400 leading-relaxed max-w-2xl mx-auto italic">
+              <strong>Rechtlicher Hinweis:</strong> 
+              Diese Antworten dienen der Orientierung. Rechtsverbindlich ist allein die offizielle Dokumentation in ihrer jeweils gültigen Fassung.
           </div>
         </div>
       </div>
