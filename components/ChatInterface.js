@@ -153,7 +153,7 @@ export default function ChatInterface({ slug }) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* High-Performance Input Area */}
+        {/* Footer Area with Input & Disclaimer */}
         <div className="p-4 bg-white border-t border-slate-100">
           <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="relative flex items-center max-w-3xl mx-auto group">
             <input
@@ -169,9 +169,13 @@ export default function ChatInterface({ slug }) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
             </button>
           </form>
-          <div className="flex justify-between items-center mt-3 px-1 text-[9px] text-slate-400 font-medium uppercase tracking-tighter">
-            <span>Stand: Benutzungsordnung 2025</span>
-            <span className="opacity-50">Heidelberg STW Assistant</span>
+          
+          {/* Legal Disclaimer Box */}
+          <div className="mt-4 pt-3 border-t border-slate-50">
+            <p className="text-[10px] text-center text-slate-400 leading-relaxed max-w-2xl mx-auto">
+              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf offiziellen Dokumenten 
+              (z. B. Mietbedingungen, Hausordnung, Brandschutz). Rechtlich bindend sind ausschließlich die unterzeichneten Verträge.
+            </p>
           </div>
         </div>
       </div>
