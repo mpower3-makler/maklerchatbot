@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
-const STW_EXAMPLE_QUESTIONS = const STW_EXAMPLE_QUESTIONS = const STW_EXAMPLE_QUESTIONS = [
+const STW_EXAMPLE_QUESTIONS = [
   'Wie bewerbe ich mich für einen Wohnheimplatz?', // Deutsch
   'How do I apply for a room change?',             // English
   'Quelles sont les règles pour le bruit la nuit ?', // Français
