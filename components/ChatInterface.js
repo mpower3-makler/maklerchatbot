@@ -9,10 +9,9 @@ const DEFAULT_EXAMPLE_QUESTIONS = [
 ]
 
 const STW_EXAMPLE_QUESTIONS = [
-  'Wer kann sich bewerben?',
+  'What are the deadlines for applying for a room change?',
   'Kann ich auch zu einem späteren Zeitpunkt einziehen?',
   'Welche Fristen muss ich bei einer Kündigung beachten?',
-  'Who is eligible to apply?',
   'Quelles sont les conditions pour résilier le contrat ?',
 ]
 
