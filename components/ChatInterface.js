@@ -1,21 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-
-const DEFAULT_EXAMPLE_QUESTIONS = [
-  'Welche Modernisierungsmaßnahmen werden im Energieausweis empfohlen?',
-  'Gab es in den letzten Jahren energetische Sanierungen (z.B. Fenster, Dämmung, Heizung)?',
-  'Wie hoch sind die monatlichen Nebenkosten?',
-]
+import ReactMarkdown from 'react-markdown'
 
 const STW_EXAMPLE_QUESTIONS = [
-  'What are the deadlines for applying for a room change?',
-  'Kann ich auch zu einem späteren Zeitpunkt einziehen?',
-  'Welche Fristen muss ich bei einer Kündigung beachten?',
-  'Quelles sont les conditions pour résilier le contrat ?',
+  'Wann muss es im Wohnheim ruhig sein?',
+  'What should I do if my room has pests upon arrival?',
+  'Wie kann ich mein Zimmer innerhalb des Wohnheims wechseln?',
+  'Où puis-je garer mon vélo ?',
 ]
 
-// Loading-Texts rotieren in mehreren Sprachen
 const LOADING_TEXTS_SHORT = [
   'Einen Moment, ich prüfe die Unterlagen für Sie …',
   'One moment — I’m checking the documents for you …',
@@ -36,13 +30,8 @@ export default function ChatInterface({ slug }) {
     return 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36)
   })
 
-  const slugNorm = String(slug || '').trim().toLowerCase()
-  const isStw = slugNorm.startsWith('stw')
-  const exampleQuestions = isStw ? STW_EXAMPLE_QUESTIONS : DEFAULT_EXAMPLE_QUESTIONS
-
-  // Loading-Text-Rotation (simple Variante: startet immer mit DE, dann EN, dann FR)
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0)
-  const [loadingPhase, setLoadingPhase] = useState('short') // 'short' | 'long'
+  const [loadingPhase, setLoadingPhase] = useState('short')
 
   useEffect(() => {
     if (!isLoading) {
@@ -50,15 +39,10 @@ export default function ChatInterface({ slug }) {
       setLoadingPhase('short')
       return
     }
-
-    setLoadingPhase('short')
-
     const phaseTimeout = setTimeout(() => setLoadingPhase('long'), 12000)
-
     const interval = setInterval(() => {
       setLoadingMsgIndex((i) => i + 1)
     }, 3500)
-
     return () => {
       clearTimeout(phaseTimeout)
       clearInterval(interval)
@@ -67,22 +51,18 @@ export default function ChatInterface({ slug }) {
 
   const loadingTexts = loadingPhase === 'long' ? LOADING_TEXTS_LONG : LOADING_TEXTS_SHORT
   const loadingText = loadingTexts[loadingMsgIndex % loadingTexts.length]
-
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, isLoading])
 
   const sendMessage = async (text) => {
     if (!text.trim() || isLoading) return
-
     const userMessage = { role: 'user', content: text }
     setMessages((prev) => [...prev, userMessage])
     setInput('')
@@ -91,166 +71,110 @@ export default function ChatInterface({ slug }) {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          slug, // welcher Chat
-          sessionId, // welche Session
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, slug, sessionId }),
       })
-
       const data = await response.json()
-
       if (response.ok) {
-        const botMessage = {
-          role: 'assistant',
-          content: data.response || 'Antwort empfangen',
-        }
-        setMessages((prev) => [...prev, botMessage])
+        setMessages((prev) => [...prev, { role: 'assistant', content: data.response || 'Antwort empfangen' }])
       } else {
-        throw new Error(data.error || 'Unbekannter Fehler')
+        throw new Error(data.error || 'Fehler')
       }
     } catch (error) {
-      console.error('Fehler:', error)
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.',
-        },
-      ])
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Fehler. Bitte erneut versuchen.' }])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    sendMessage(input)
-  }
-
-  const handleExampleClick = (question) => {
-    sendMessage(question)
-  }
-
   return (
-    <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6">
-      {/* Chat-Karte */}
+    <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6 font-sans">
       <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
-        {/* Header */}
-        <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 to-slate-50 px-5 py-4">
+        
+        {/* Header mit STW Branding */}
+        <div className="border-b border-slate-200 bg-[#003d82] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-              OB
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#003d82] font-bold shadow-sm">
+              STW
             </div>
             <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-slate-900">Objekt-Chat</h1>
-              <p className="text-xs text-slate-500">
-                Property ID{' '}
-                <span className="ml-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] text-slate-700 shadow-sm">
-                  {slug}
-                </span>
-              </p>
+              <h1 className="text-sm font-semibold text-white">Studierendenwerk Heidelberg</h1>
+              <p className="text-xs text-blue-100 opacity-80">Digitaler Assistent • {slug}</p>
             </div>
-            <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>Online</span>
+            <div className="ml-auto flex items-center gap-2 text-xs text-blue-50">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Bereit</span>
             </div>
           </div>
         </div>
 
-        {/* Hauptbereich: Beispiele + Nachrichten */}
-        <div className="flex flex-1 flex-col bg-slate-50">
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            {/* Beispielfragen oben, solange der Chat leer ist */}
+        {/* Chat-Bereich */}
+        <div className="flex flex-1 flex-col bg-slate-50 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
             {messages.length === 0 && (
-              <div className="mb-1 space-y-2">
-                <p className="text-xs font-medium text-slate-600">
-                  💡 Beispiel-Fragen, die Sie dem Chat stellen können:
-                </p>
-                <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
-                  {exampleQuestions.map((question) => (
-                    <button
-                      key={question}
-                      type="button"
-                      onClick={() => handleExampleClick(question)}
-                      className="text-left px-4 py-2.5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-200 hover:border-blue-400 text-xs text-slate-700 hover:text-blue-600"
-                    >
-                      {question}
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Häufige Fragen:</p>
+                <div className="flex flex-wrap gap-2">
+                  {STW_EXAMPLE_QUESTIONS.map((q) => (
+                    <button key={q} onClick={() => sendMessage(q)} className="text-left px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-[#003d82] hover:text-[#003d82] transition-all text-sm">
+                      {q}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Nachrichten */}
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-sm'
-                      : 'bg-white text-slate-900 shadow-sm rounded-bl-sm'
-                  }`}
-                >
-                  {message.content}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
+                <div className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
+                  m.role === 'user' ? 'bg-[#003d82] text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none border border-slate-100'
+                }`}>
+                  <div className="prose prose-sm max-w-none prose-headings:text-inherit prose-p:leading-relaxed prose-strong:text-inherit prose-a:text-blue-400">
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ))}
 
-            {/* Loading indicator mit Text & Animation */}
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
+              <div className="flex justify-start animate-pulse">
+                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-slate-100">
                   <div className="flex items-center space-x-3">
-                    <span className="text-xs text-slate-600 animate-pulse">{loadingText}</span>
+                    <span className="text-xs text-slate-500">{loadingText}</span>
                     <div className="flex space-x-1">
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      />
+                      {[0, 150, 300].map((d) => (
+                        <div key={d} className="w-1.5 h-1.5 bg-[#003d82] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             )}
-
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input-Bereich bleibt unten sichtbar */}
-          <div className="border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
-            <p className="mb-1 text-xs text-slate-500">💬 Stellen Sie dem Chat Ihre Frage zum Objekt:</p>
-            <form onSubmit={handleSubmit} className="flex gap-2">
+          {/* Input-Bereich */}
+          <div className="p-4 bg-white border-t border-slate-100">
+            <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2 max-w-3xl mx-auto">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ihre Frage eingeben …"
-                className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Fragen zur Hausordnung oder zum Zimmerwechsel..."
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003d82] text-sm"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="px-5 py-3 rounded-2xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-3 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] disabled:bg-slate-300 transition-all shadow-md"
               >
                 Senden
               </button>
             </form>
+            <p className="text-[10px] text-center text-slate-400 mt-3">
+              Dies ist ein KI-Assistent. Die Antworten basieren auf der Hausordnung 2025 und sind rechtlich nicht bindend.
+            </p>
           </div>
         </div>
       </div>
