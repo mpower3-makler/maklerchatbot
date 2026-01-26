@@ -4,14 +4,13 @@ import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 const STW_EXAMPLE_QUESTIONS = [
-  'Wie bewerbe ich mich für einen Wohnheimplatz?', // Deutsch
-  'How do I apply for a room change?',             // English
-  'Quelles sont les règles pour le bruit la nuit ?', // Français
-  'Was muss ich beim Einzug beachten?'            // Deutsch
+  'Wie bewerbe ich mich für einen Wohnheimplatz?', 
+  'How do I apply for a room change?',             
+  'Quelles sont les règles pour le bruit la nuit ?', 
+  'Was muss ich beim Einzug beachten?'            
 ]
 
-
-const LOADING_TEXTS_SHORT =const LOADING_TEXTS_SHORT = [
+const LOADING_TEXTS_SHORT = [
   'Ich durchsuche die Wissensdatenbank für Sie …',
   'Einen Moment, ich prüfe die offiziellen Richtlinien …',
   'Ich gleiche Ihre Frage mit allen Wohnheim-Unterlagen ab …',
@@ -90,105 +89,4 @@ export default function ChatInterface({ slug }) {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6 font-sans">
-      <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
-        
-        {/* Header mit STW Branding */}
-        <div className="border-b border-slate-200 bg-[#003d82] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#003d82] font-bold shadow-sm">
-              STW
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-white">Studierendenwerk Heidelberg</h1>
-              <p className="text-xs text-blue-100 opacity-80">Digitaler Assistent • {slug}</p>
-            </div>
-            <div className="ml-auto flex items-center gap-2 text-xs text-blue-50">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Bereit</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat-Bereich */}
-        <div className="flex flex-1 flex-col bg-slate-50 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
-            {messages.length === 0 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Häufige Fragen:</p>
-                <div className="flex flex-wrap gap-2">
-                  {STW_EXAMPLE_QUESTIONS.map((q) => (
-                    <button key={q} onClick={() => sendMessage(q)} className="text-left px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-[#003d82] hover:text-[#003d82] transition-all text-sm">
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
-                <div className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
-                  m.role === 'user' ? 'bg-[#003d82] text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none border border-slate-100'
-                }`}>
-                  <div className="prose prose-sm max-w-none prose-headings:text-inherit prose-p:leading-relaxed prose-strong:text-inherit prose-a:text-blue-400">
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex justify-start animate-pulse">
-                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-slate-100">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xs text-slate-500">{loadingText}</span>
-                    <div className="flex space-x-1">
-                      {[0, 150, 300].map((d) => (
-                        <div key={d} className="w-1.5 h-1.5 bg-[#003d82] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-{/* Input-Bereich */}
-          <div className="p-4 bg-white border-t border-slate-100">
-            {/* Mehrsprachigkeit-Hinweis */}
-            <p className="mb-2 text-[11px] text-slate-500 flex items-center justify-center gap-2">
-              <span>🌐</span>
-              <span className="font-medium">Antwortet in jeder Sprache • Answers in any language • Répond dans toutes les langues</span>
-            </p>
-
-            <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2 max-w-3xl mx-auto">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Frage stellen... / Ask a question... / Poser une question..."
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003d82] text-sm"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="px-6 py-3 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] disabled:bg-slate-300 transition-all shadow-md"
-              >
-                Senden
-              </button>
-            </form>
-            
-            {/* Disclaimer */}
-            <p className="text-[10px] text-center text-slate-400 mt-3 leading-tight px-4">
-              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf den hinterlegten 
-              Dokumenten (z. B. Mietbedingungen, Hausordnung, Brandschutz) und dienen der Information. 
-              Rechtlich bindend sind ausschließlich die unterzeichneten Verträge und offiziellen Satzungen.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+      <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_
