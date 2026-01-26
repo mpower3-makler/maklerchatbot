@@ -88,7 +88,7 @@ export default function ChatInterface({ slug }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6 font-sans">
+    <div className="min-h-screen bg-slate-100 flex items-stretch justify-center px-4 py-6 font-sans text-slate-900">
       <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
         
         {/* Header mit STW Branding */}
@@ -110,7 +110,7 @@ export default function ChatInterface({ slug }) {
 
         {/* Chat-Bereich */}
         <div className="flex flex-1 flex-col bg-slate-50 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-5 py-8 space-y-8">
             {messages.length === 0 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Häufige Fragen:</p>
@@ -126,15 +126,18 @@ export default function ChatInterface({ slug }) {
 
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
-                <div className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
-                  m.role === 'user' ? 'bg-[#003d82] text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none border border-slate-100'
+                <div className={`max-w-[90%] md:max-w-[80%] px-5 py-4 rounded-2xl shadow-sm ${
+                  m.role === 'user' 
+                    ? 'bg-[#003d82] text-white rounded-br-none' 
+                    : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'
                 }`}>
-                  <div className="prose prose-sm max-w-none 
-                prose-p:my-2 prose-p:leading-relaxed 
-                prose-strong:font-bold prose-strong:text-[#003d82]
-                prose-ul:list-disc prose-ul:ml-4">
-  <ReactMarkdown>{m.content}</ReactMarkdown>
-</div>
+                  {/* Markdown Container mit verbessertem Spacing */}
+                  <div className={`prose prose-sm max-w-none 
+                    ${m.role === 'user' ? 'prose-invert' : 'prose-slate'}
+                    prose-p:my-3 prose-p:leading-relaxed 
+                    prose-strong:font-bold 
+                    prose-ul:my-2 prose-li:my-1`}>
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
                   </div>
                 </div>
               </div>
@@ -142,9 +145,9 @@ export default function ChatInterface({ slug }) {
 
             {isLoading && (
               <div className="flex justify-start animate-pulse">
-                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-slate-100">
+                <div className="bg-white px-5 py-4 rounded-2xl rounded-bl-none shadow-sm border border-slate-200">
                   <div className="flex items-center space-x-3">
-                    <span className="text-xs text-slate-500">{loadingText}</span>
+                    <span className="text-xs text-slate-500 font-medium">{loadingText}</span>
                     <div className="flex space-x-1">
                       {[0, 150, 300].map((d) => (
                         <div key={d} className="w-1.5 h-1.5 bg-[#003d82] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
@@ -158,10 +161,10 @@ export default function ChatInterface({ slug }) {
           </div>
 
           {/* Input-Bereich */}
-          <div className="p-4 bg-white border-t border-slate-100">
-            <p className="mb-2 text-[11px] text-slate-500 flex items-center justify-center gap-2">
+          <div className="p-4 bg-white border-t border-slate-200">
+            <p className="mb-3 text-[11px] text-slate-500 flex items-center justify-center gap-2">
               <span>🌐</span>
-              <span className="font-medium">Antwortet in jeder Sprache • Answers in any language • Répond dans toutes les langues</span>
+              <span className="font-medium italic">Antwortet in jeder Sprache • Answers in any language</span>
             </p>
 
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2 max-w-3xl mx-auto">
@@ -169,23 +172,23 @@ export default function ChatInterface({ slug }) {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Frage stellen... / Ask a question... / Poser une question..."
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003d82] text-sm"
+                placeholder="Ihre Frage hier eingeben..."
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#003d82] focus:border-transparent text-sm transition-all"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="px-6 py-3 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] disabled:bg-slate-300 transition-all shadow-md"
+                className="px-6 py-3 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] disabled:bg-slate-300 transition-all shadow-md active:scale-95"
               >
                 Senden
               </button>
             </form>
             
-            <p className="text-[10px] text-center text-slate-400 mt-3 leading-tight px-4">
-              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf den hinterlegten 
+            <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed max-w-2xl mx-auto">
+              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf offiziellen 
               Dokumenten (z. B. Mietbedingungen, Hausordnung, Brandschutz) und dienen der Information. 
-              Rechtlich bindend sind ausschließlich die unterzeichneten Verträge und offiziellen Satzungen.
+              Rechtlich bindend sind ausschließlich die unterzeichneten Verträge.
             </p>
           </div>
         </div>
