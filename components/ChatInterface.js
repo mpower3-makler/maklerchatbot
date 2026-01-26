@@ -95,11 +95,11 @@ export default function ChatInterface({ slug }) {
         <div className="border-b border-slate-100 bg-[#003d82] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white font-bold text-xs border border-white/20">STW</div>
-            <div className="flex flex-col">
-              <h1 className="text-xs font-bold text-white leading-none mb-1">Studierendenwerk Heidelberg</h1>
+            <div className="flex flex-col text-white">
+              <h1 className="text-xs font-bold leading-none mb-1">Studierendenwerk Heidelberg</h1>
               <div className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <p className="text-[10px] text-blue-100/70 font-medium uppercase tracking-tight">AI Assistant • {slug}</p>
+                <p className="text-[10px] opacity-80 uppercase tracking-tight font-medium">AI Assistant • {slug}</p>
               </div>
             </div>
           </div>
@@ -172,8 +172,8 @@ export default function ChatInterface({ slug }) {
           
           <div className="mt-4 pt-3 border-t border-slate-50">
             <p className="text-[10px] text-center text-slate-400 leading-relaxed max-w-2xl mx-auto italic">
-              <strong>Rechtlicher Hinweis:</strong> 
-              Diese Antworten dienen der Orientierung. Rechtsverbindlich ist allein die offizielle Dokumentation in ihrer jeweils gültigen Fassung.
+              <strong>Rechtlicher Hinweis:</strong> Diese Antworten dienen der Orientierung. Rechtsverbindlich ist allein die offizielle Dokumentation in ihrer jeweils gültigen Fassung.
+            </p>
           </div>
         </div>
       </div>
