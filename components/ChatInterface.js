@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 const STW_EXAMPLE_QUESTIONS = [
   'Wie bewerbe ich mich für einen Wohnheimplatz?', 
   'How do I apply for a room change?',             
-  'Quelles sind die Regeln für die Nachtruhe?', 
+  'Quelles sont les règles pour la nuit ?', 
   'Was muss ich beim Einzug beachten?'            
 ]
 
@@ -125,12 +125,13 @@ export default function ChatInterface({ slug }) {
                     ? 'bg-[#003d82] text-white rounded-br-none' 
                     : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'
                 }`}>
-                  {/* Markdown mit KOMPAKTEN Abständen */}
+                  {/* Markdown mit whitespace-pre-line Fix für konsistente Zeilenumbrüche */}
                   <div className={`prose prose-sm max-w-none 
                     ${m.role === 'user' ? 'prose-invert' : 'prose-slate'}
-                    prose-p:my-1 prose-p:leading-snug
+                    prose-p:my-1 prose-p:leading-relaxed 
                     prose-strong:text-[#003d82] prose-strong:font-bold
-                    prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5`}>
+                    prose-ul:my-1 prose-li:my-0.5
+                    whitespace-pre-line`}>
                     <ReactMarkdown>{m.content}</ReactMarkdown>
                   </div>
                 </div>
@@ -166,7 +167,7 @@ export default function ChatInterface({ slug }) {
               />
               <button
                 type="submit" disabled={isLoading || !input.trim()}
-                className="px-5 py-2.5 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] transition-all active:scale-95 shadow-md"
+                className="px-5 py-2.5 rounded-xl bg-[#003d82] text-white font-bold text-sm hover:bg-[#002a5a] transition-all shadow-md"
               >
                 Senden
               </button>
