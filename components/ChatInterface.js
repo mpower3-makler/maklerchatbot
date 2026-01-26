@@ -3,17 +3,18 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
-const STW_EXAMPLE_QUESTIONS = [
-  'Wann muss es im Wohnheim ruhig sein?',
-  'What should I do if my room has pests upon arrival?',
-  'Wie kann ich mein Zimmer innerhalb des Wohnheims wechseln?',
-  'Où puis-je garer mon vélo ?',
+const STW_EXAMPLE_QUESTIONS = const STW_EXAMPLE_QUESTIONS = const STW_EXAMPLE_QUESTIONS = [
+  'Wie bewerbe ich mich für einen Wohnheimplatz?', // Deutsch
+  'How do I apply for a room change?',             // English
+  'Quelles sont les règles pour le bruit la nuit ?', // Français
+  'Was muss ich beim Einzug beachten?'            // Deutsch
 ]
 
-const LOADING_TEXTS_SHORT = [
-  'Einen Moment, ich prüfe die Unterlagen für Sie …',
-  'One moment — I’m checking the documents for you …',
-  'Un instant — je vérifie les documents pour vous …',
+
+const LOADING_TEXTS_SHORT =const LOADING_TEXTS_SHORT = [
+  'Ich durchsuche die Wissensdatenbank für Sie …',
+  'Einen Moment, ich prüfe die offiziellen Richtlinien …',
+  'Ich gleiche Ihre Frage mit allen Wohnheim-Unterlagen ab …',
 ]
 
 const LOADING_TEXTS_LONG = [
@@ -153,14 +154,20 @@ export default function ChatInterface({ slug }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input-Bereich */}
+{/* Input-Bereich */}
           <div className="p-4 bg-white border-t border-slate-100">
+            {/* Mehrsprachigkeit-Hinweis */}
+            <p className="mb-2 text-[11px] text-slate-500 flex items-center justify-center gap-2">
+              <span>🌐</span>
+              <span className="font-medium">Antwortet in jeder Sprache • Answers in any language • Répond dans toutes les langues</span>
+            </p>
+
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2 max-w-3xl mx-auto">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Fragen zur Hausordnung oder zum Zimmerwechsel..."
+                placeholder="Frage stellen... / Ask a question... / Poser une question..."
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003d82] text-sm"
                 disabled={isLoading}
               />
@@ -172,8 +179,12 @@ export default function ChatInterface({ slug }) {
                 Senden
               </button>
             </form>
-            <p className="text-[10px] text-center text-slate-400 mt-3">
-              Dies ist ein KI-Assistent. Die Antworten basieren auf der Hausordnung 2025 und sind rechtlich nicht bindend.
+            
+            {/* Disclaimer */}
+            <p className="text-[10px] text-center text-slate-400 mt-3 leading-tight px-4">
+              Dies ist ein KI-Assistent des Studierendenwerks Heidelberg. Die Antworten basieren auf den hinterlegten 
+              Dokumenten (z. B. Mietbedingungen, Hausordnung, Brandschutz) und dienen der Information. 
+              Rechtlich bindend sind ausschließlich die unterzeichneten Verträge und offiziellen Satzungen.
             </p>
           </div>
         </div>
