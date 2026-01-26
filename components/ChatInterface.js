@@ -129,8 +129,12 @@ export default function ChatInterface({ slug }) {
                 <div className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
                   m.role === 'user' ? 'bg-[#003d82] text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none border border-slate-100'
                 }`}>
-                  <div className="prose prose-sm max-w-none prose-headings:text-inherit prose-p:leading-relaxed prose-strong:text-inherit prose-a:text-blue-400">
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                  <div className="prose prose-sm max-w-none 
+                prose-p:my-2 prose-p:leading-relaxed 
+                prose-strong:font-bold prose-strong:text-[#003d82]
+                prose-ul:list-disc prose-ul:ml-4">
+  <ReactMarkdown>{m.content}</ReactMarkdown>
+</div>
                   </div>
                 </div>
               </div>
